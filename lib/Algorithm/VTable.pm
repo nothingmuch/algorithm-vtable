@@ -8,6 +8,18 @@ use Algorithm::VTable::Container;
 
 use namespace::clean -except => 'meta';
 
+has first_index => (
+	isa => "Int",
+	is  => "ro",
+	default => 0,
+);
+
+has first_slot => (
+	isa => "Int",
+	is  => "ro",
+	default => 0,
+);
+
 has containers => (
 	isa => "ArrayRef[Algorithm::VTable::Container]",
 	is  => "ro",
@@ -44,7 +56,7 @@ sub container_slots {
 sub compute_container_slots {
 	my ( $self, $container ) = @_;
 
-	my $i;
+	my $i = $self->first_slot;
 
 	return {
 		map { $_->name => $i++ }
@@ -181,7 +193,7 @@ sub _build_symbol_index_names {
 sub _build_symbol_name_indexes {
 	my $self = shift;
 
-	my $i;
+	my $i = $self->first_index;
 
 	return {
 		map { $_ => $i++ }
