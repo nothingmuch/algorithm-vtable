@@ -272,6 +272,24 @@ sub _build_symbol_name_indexes {
 	};
 }
 
+# convenience
+
+has class_containers => (
+	isa => "HashRef[Algorithm::VTable::Container]",
+	is  => "ro",
+	lazy_build => 1,
+);
+
+sub _build_class_containers {
+	my $self = shift;
+
+	return {
+		map { $_->class->name => $_ }
+			grep { $_->has_class }
+				@{ $self->containers }
+	}
+}
+
 __PACKAGE__->meta->make_immutable;
 
 __PACKAGE__

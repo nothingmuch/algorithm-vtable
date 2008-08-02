@@ -26,10 +26,7 @@ is_deeply(
 	"name index per attr",
 );
 
-my %containers = map { $_->class->name => $_ } @{ $t->containers };
-
-my $sym = $containers{"Algorithm::VTable::Symbol"};
-my $con = $containers{"Algorithm::VTable::Container"};
+my ( $sym, $con ) = @{ $t->class_containers }{qw(Algorithm::VTable::Symbol Algorithm::VTable::Container)};
 
 {
 	my $table = $t->container_table($sym);
