@@ -6,7 +6,17 @@ use Moose;
 use Algorithm::VTable::Symbol;
 use Algorithm::VTable::Container;
 
+use Moose::Util::TypeConstraints;
+
 use namespace::clean -except => 'meta';
+
+enum __PACKAGE__ . "::vtable_meta_symbol", qw(first last);
+
+has vtable_meta_symbol => (
+	isa => "Maybe[". __PACKAGE__ ."::vtable_meta_symbol]",
+	is  => "ro",
+	predicate => "has_vtable_meta_symbol",
+);
 
 has first_index => (
 	isa => "Int",
@@ -58,6 +68,15 @@ sub compute_container_slots {
 
 	my $i = $self->first_slot;
 
+	if ( $self->has_vtable_meta_symbol ) {
+		if ( my $vtable_slot = $self->vtable_slot ) {
+			# we need to skip over the vtable slot
+			die "FIXME";
+		} else {
+			$i++; # just skip it and resume normally
+		}
+	}
+
 	return {
 		map { $_->name => $i++ }
 			@{ $container->symbols }
@@ -100,7 +119,37 @@ sub symbol_name_index {
 # FIXME partition containers based on symbol sharing, to isolate separate
 # hierarchies
 
+has vtable_slot => ( # FIXME parametrize over container for 'last' case
+	isa => "Maybe[Int]",
+	is  => "ro",
+	init_arg => undef,
+	lazy_build => 1,
+);
+
+sub _build_vtable_slot {
+	my $self = shift;
+
+	if ( $self->has_vtable_meta_symbol ) {
+		my $type = $self->vtable_meta_symbol;
+
+		if ( $type eq 'first' ) {
+			return 0;
+		} else {
+			die "FIXME";
+		}
+	} else {
+		return undef;
+	}
+}
+
 # auxillary computed attrs
+
+has vtable_meta_symbol_object => (
+	isa => "Algorithm::VTable::Symbol",
+	is  => "ro",
+	lazy_build => 1,
+);
+
 has containers_by_id => (
 	isa => "HashRef[Algorithm::VTable::Container]",
 	is  => "ro",
@@ -136,6 +185,9 @@ has symbol_name_indexes => (
 	lazy_build => 1,
 );
 
+sub _build_vtable_meta_symbol_object {
+	Algorithm::VTable::Symbol->new( name => "vtable" );
+}
 
 # this is a fallback, the user can request to only compute a certain set of
 # symbols or to specify a certain order
