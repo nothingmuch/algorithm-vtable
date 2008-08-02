@@ -22,7 +22,7 @@ sub new_from_classes {
 		containers => [
 			map { Algorithm::VTable::Container->new_from_class($_) }
 				grep { not $seen{$_}++ }
-					map { $_->linearized_isa }
+					map { reverse $_->linearized_isa }
 						@meta
 		],
 		%args,
