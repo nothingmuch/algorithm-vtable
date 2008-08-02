@@ -110,7 +110,7 @@ sub symbol_name_index {
 	my ( $self, @symbols ) = @_;
 
 	if ( @symbols == 1 ) {
-		return $self->symbol_name_indexes->[$symbols[0]];
+		return $self->symbol_name_indexes->{$symbols[0]};
 	} else {
 		return @{ $self->symbol_name_indexes }{@symbols};
 	}
