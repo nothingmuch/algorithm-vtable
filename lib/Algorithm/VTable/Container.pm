@@ -9,6 +9,28 @@ use namespace::clean -except => 'meta';
 
 with qw(Algorithm::VTable::ID);
 
+sub new_from_class {
+	my ( $class, $source, @args ) = @_;
+
+	my $meta = (ref $source ? $source : Class::MOP::Class->initialize($source));
+
+	$class->new(
+		class   => $meta,
+		vtable_meta_symbol => "first",
+		symbols => [
+			map { Algorithm::VTable::Symbol->new_from_attribute($meta, $_) }
+				$meta->compute_all_applicable_attributes,
+		],
+		@args,
+	);
+}
+
+has class => (
+	isa => "Class::MOP::Class",
+	is  => "ro",
+	predicate => "has_class",
+);
+
 has symbols => (
 	isa => "ArrayRef[Algorithm::VTable::Symbol]",
 	is  => "ro",

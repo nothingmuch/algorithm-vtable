@@ -10,6 +10,25 @@ use Moose::Util::TypeConstraints;
 
 use namespace::clean -except => 'meta';
 
+sub new_from_classes {
+	my ( $class, %args ) = @_;
+
+	my @meta = map { (ref $_ ? $_ : Class::MOP::Class->initialize($_)) } @{ delete $args{classes} };
+
+	my %seen;
+
+	$class->new(
+		vtable_meta_symbol => "first",
+		containers => [
+			map { Algorithm::VTable::Container->new_from_class($_) }
+				grep { not $seen{$_}++ }
+					map { $_->linearized_isa }
+						@meta
+		],
+		%args,
+	);
+}
+
 enum __PACKAGE__ . "::vtable_meta_symbol", qw(first last);
 
 has vtable_meta_symbol => (
