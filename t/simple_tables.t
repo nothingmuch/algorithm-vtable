@@ -25,7 +25,7 @@ my $sub = Algorithm::VTable::Container->new(
 
 my $override = Algorithm::VTable::Container->new(
 	symbols => [
-		@{ $base->symbols },
+		$base->symbols->[1], # bar
 		Algorithm::VTable::Symbol->new( name => "foo" ),
 	],
 );
@@ -37,10 +37,18 @@ my $override = Algorithm::VTable::Container->new(
 
 	isa_ok( $t, "Algorithm::VTable" );
 
+	is_deeply( [ $t->symbol_name_index(qw(foo bar)) ], [ 0, 1 ], "symbol index" );
+
 	is_deeply(
 		$t->symbols,
 		$base->symbols,
 		"all vtable symbols",
+	);
+
+	is_deeply(
+		$t->container_slots($base),
+		{ foo => 0, bar => 1 },
+		"container slots",
 	);
 
 	is_deeply(
@@ -57,6 +65,8 @@ my $override = Algorithm::VTable::Container->new(
 
 	isa_ok( $t, "Algorithm::VTable" );
 
+	is_deeply( [ $t->symbol_name_index(qw(foo bar gorch)) ], [ 0, 1, 2 ], "symbol index" );
+
 	is_deeply(
 		$t->symbols,
 		$sub->symbols,
@@ -64,9 +74,21 @@ my $override = Algorithm::VTable::Container->new(
 	);
 
 	is_deeply(
+		$t->container_slots($base),
+		{ foo => 0, bar => 1 },
+		"container slots",
+	);
+
+	is_deeply(
 		$t->container_table($base),
 		[ 0, 1 ],
 		"vtable for base",
+	);
+
+	is_deeply(
+		$t->container_slots($sub),
+		{ foo => 0, bar => 1, gorch => 2 },
+		"container slots",
 	);
 
 	is_deeply(
@@ -83,9 +105,11 @@ my $override = Algorithm::VTable::Container->new(
 
 	isa_ok( $t, "Algorithm::VTable" );
 
+	is_deeply( [ $t->symbol_name_index(qw(foo bar)) ], [ 0, 1 ], "symbol index" );
+
 	is_deeply(
 		$t->symbols,
-		$override->symbols,
+		[ @{ $base->symbols }, $override->symbols->[1] ],
 		"all vtable symbols",
 	);
 
@@ -96,8 +120,42 @@ my $override = Algorithm::VTable::Container->new(
 	);
 
 	is_deeply(
+		$t->container_slots($override),
+		{ foo => 1, bar => 0 },
+		"container slots",
+	);
+
+	is_deeply(
 		$t->container_table($override),
-		[ 2, 1 ],
+		[ 1, 0 ],
+		"vtable for override",
+	);
+}
+
+{
+	my $t = Algorithm::VTable->new(
+		containers => [ $base, $sub, $override ],
+	);
+
+	isa_ok( $t, "Algorithm::VTable" );
+
+	is_deeply( [ $t->symbol_name_index(qw(foo bar gorch)) ], [ 0, 1, 2 ], "symbol index" );
+
+	is_deeply(
+		$t->container_table($base),
+		[ 0, 1 ],
+		"vtable for base",
+	);
+
+	is_deeply(
+		$t->container_table($sub),
+		[ 0, 1, 2 ],
+		"vtable for sub",
+	);
+
+	is_deeply(
+		$t->container_table($override),
+		[ 1, 0 ],
 		"vtable for override",
 	);
 }

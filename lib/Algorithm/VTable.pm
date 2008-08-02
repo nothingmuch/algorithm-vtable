@@ -22,12 +22,35 @@ has symbols => (
 
 # computed attrs:
 
+has _container_slots => (
+	isa => "HashRef[HashRef[Int]]",
+	is  => "ro",
+	init_arg => undef,
+	default => sub { {} },
+);
+
 has _container_tables => (
 	isa => "HashRef[ArrayRef[Int]]",
 	is  => "ro",
 	init_arg => undef,
 	default => sub { {} },
 );
+
+sub container_slots {
+	my ( $self, $container ) = @_;
+	$self->_container_slots->{$container->id} ||= $self->compute_container_slots($container);
+}
+
+sub compute_container_slots {
+	my ( $self, $container ) = @_;
+
+	my $i;
+
+	return {
+		map { $_->name => $i++ }
+			@{ $container->symbols }
+	};
+}
 
 sub container_table {
 	my ( $self, $container ) = @_;
@@ -37,21 +60,29 @@ sub container_table {
 sub compute_container_table {
 	my ( $self, $container ) = @_;
 
+	my @names   = map { $_->name } @{ $container->symbols };
+	my @indexes = @{ $self->symbol_name_indexes }{ @names };
+	my @slots   = @{ $self->container_slots($container) }{@names};
+
 	my @table;
-	my $i;
-
-	my $name_index =  $self->symbol_name_indexes;
-
-	foreach my $symbol ( @{ $container->symbols } ) {
-		my $index = $name_index->{$symbol->name};
-		# FIXME scheck if $name is unique to container
-		# if it's unique it's just an index
-		# if it's shared then wee try to match the index up with other usages
-		# if we can then the table can be omitted
-		$table[$index] = $i++;
-	}
+	@table[@indexes] = @slots;
 
 	return \@table;
+
+	# FIXME scheck if $name is unique to container
+	# if it's unique it's just an index
+	# if it's shared then wee try to match the index up with other usages
+	# if we can then the table can be omitted
+}
+
+sub symbol_name_index {
+	my ( $self, @symbols ) = @_;
+	
+	if ( @symbols == 1 ) {
+		return $self->symbol_name_indexes->[$symbols[0]];
+	} else {
+		return @{ $self->symbol_name_indexes }{@symbols};
+	}
 }
 
 # FIXME partition containers based on symbol sharing, to isolate separate
