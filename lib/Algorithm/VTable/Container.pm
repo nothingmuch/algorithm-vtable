@@ -15,6 +15,7 @@ sub new_from_class {
 	my $meta = (ref $source ? $source : Class::MOP::Class->initialize($source));
 
 	$class->new(
+		id      => $meta->name,
 		class   => $meta,
 		vtable_meta_symbol => "first",
 		symbols => [
