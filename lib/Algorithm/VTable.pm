@@ -147,7 +147,7 @@ sub compute_container_slots {
 	if ( $self->has_vtable_meta_symbol ) {
 		if ( my $vtable_slot = $self->vtable_slot ) {
 			# we need to skip over the vtable slot
-			die "FIXME";
+			die "FIXME: vtable slot is $vtable_slot";
 		} else {
 			$i++; # just skip it and resume normally
 		}
