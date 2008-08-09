@@ -20,7 +20,7 @@ sub new_from_class {
 		vtable_meta_symbol => "first",
 		symbols => [
 			map { Algorithm::VTable::Symbol->new_from_attribute($meta, $_) }
-				$meta->compute_all_applicable_attributes,
+				reverse $meta->compute_all_applicable_attributes,
 		],
 		@args,
 	);

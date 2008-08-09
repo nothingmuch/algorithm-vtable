@@ -10,23 +10,77 @@ use Moose::Util::TypeConstraints;
 
 use namespace::clean -except => 'meta';
 
+with qw(MooseX::Clone);
+
 sub new_from_classes {
 	my ( $class, %args ) = @_;
-
-	my @meta = map { (ref $_ ? $_ : Class::MOP::Class->initialize($_)) } @{ delete $args{classes} };
-
-	my %seen;
 
 	$class->new(
 		vtable_meta_symbol => "first",
 		containers => [
 			map { Algorithm::VTable::Container->new_from_class($_) }
-				grep { not $seen{$_}++ }
-					map { reverse $_->linearized_isa }
-						@meta
+				$class->_extract_class_hierarchy(@{ delete $args{classes} }),
 		],
 		%args,
 	);
+}
+
+sub append_containers {
+	my ( $self, @containers ) = @_;
+
+	my $containers_by_id = $self->containers_by_id;
+
+	$self->clone(
+		containers => [
+			@{ $self->containers },
+			grep { not exists $containers_by_id->{$_->id} } @containers,
+		],
+	);
+}
+
+sub remove_containers {
+	my ( $self, @containers ) = @_;
+
+	my @ids = map { ref $_ ? $_->id : $_ } @containers;
+
+	my %ids = map { $_ => undef } @ids;
+
+	$self->clone(
+		containers => [ grep { not exists $ids{$_->id} } @{ $self->containers } ],
+	);
+}
+
+sub append_classes {
+	my ( $self, @classes ) = @_;
+
+	my $containers_by_id = $self->containers_by_id;
+
+	$self->clone(
+		containers => [
+			@{ $self->containers },
+			map { Algorithm::VTable::Container->new_from_class($_) }
+				grep { not exists $containers_by_id->{$_} }
+					$self->_extract_class_hierarchy(@classes),
+		],
+	);
+}
+
+sub remove_classes {
+	my ( $self, @classes ) = @_;
+
+	my @names = map { ref $_ ? $_->name : $_ } @classes;
+
+	$self->remove_containers(@names);
+}
+
+sub _extract_class_hierarchy {
+	my ( $class, @classes ) = @_;
+
+	my @meta = map { (ref $_ ? $_ : Class::MOP::Class->initialize($_)) } @classes;
+
+	my %seen;
+
+	return grep { not $seen{$_}++ } map { reverse $_->linearized_isa } @meta;
 }
 
 enum __PACKAGE__ . "::vtable_meta_symbol", qw(first last);
@@ -56,6 +110,7 @@ has containers => (
 );
 
 has symbols => (
+	traits => [qw(NoClone)],
 	isa => "ArrayRef[Algorithm::VTable::Symbol]",
 	is  => "ro",
 	lazy_build => 1,
@@ -64,6 +119,7 @@ has symbols => (
 # computed attrs:
 
 has _container_slots => (
+	traits => [qw(NoClone)],
 	isa => "HashRef[HashRef[Int]]",
 	is  => "ro",
 	init_arg => undef,
@@ -71,6 +127,7 @@ has _container_slots => (
 );
 
 has _container_tables => (
+	traits => [qw(NoClone)],
 	isa => "HashRef[ArrayRef[Int]]",
 	is  => "ro",
 	init_arg => undef,
@@ -170,6 +227,7 @@ has vtable_meta_symbol_object => (
 );
 
 has containers_by_id => (
+	traits => [qw(NoClone)],
 	isa => "HashRef[Algorithm::VTable::Container]",
 	is  => "ro",
 	init_arg => undef,
@@ -177,6 +235,7 @@ has containers_by_id => (
 );
 
 has symbols_by_id => (
+	traits => [qw(NoClone)],
 	isa => "HashRef[Algorithm::VTable::Symbol]",
 	is  => "ro",
 	init_arg => undef,
@@ -184,6 +243,7 @@ has symbols_by_id => (
 );
 
 has symbols_by_name => (
+	traits => [qw(NoClone)],
 	isa => "HashRef[Algorithm::VTable::Symbol]",
 	is  => "ro",
 	init_arg => undef,
@@ -191,6 +251,7 @@ has symbols_by_name => (
 );
 
 has symbol_index_names => (
+	traits => [qw(NoClone)],
 	isa => "ArrayRef[Str]",
 	is  => "ro",
 	init_arg => undef,
@@ -198,6 +259,7 @@ has symbol_index_names => (
 );
 
 has symbol_name_indexes => (
+	traits => [qw(NoClone)],
 	isa => "HashRef[Int]",
 	is  => "ro",
 	init_arg => undef,
