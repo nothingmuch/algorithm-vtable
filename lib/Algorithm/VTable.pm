@@ -211,7 +211,7 @@ sub _build_vtable_slot {
 		if ( $type eq 'first' ) {
 			return 0;
 		} else {
-			die "FIXME";
+			die "FIXME: $type is not yet implemented";
 		}
 	} else {
 		return undef;
